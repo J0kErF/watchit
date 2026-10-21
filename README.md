@@ -20,6 +20,19 @@ npm run build      # production build
 - `/api/search` and `/api/title/[id]` are serverless route handlers.
 - My List, Continue Watching and resume position are stored in the viewer's browser (`localStorage`). There are no accounts.
 
+## AI subtitles
+
+Press **CC** in the player and pick a language (or "Original language").
+
+1. `/api/subtitles` cuts the 30-second window being watched out of the video's audio with ffmpeg.
+2. It transcribes the window with `openai/whisper-1` through Vercel AI Gateway.
+3. It translates the cues with `google/gemini-3.5-flash-lite`.
+4. The player loads them into a native text track one window ahead of playback, so they also show in fullscreen.
+
+Results are stored in Vercel Runtime Cache, keyed by title, episode, window and language. Each window is paid for once per language. Silent films don't offer subtitles.
+
+AI Gateway needs a card on the Vercel account. Until then the player shows "AI subtitles turn on once AI Gateway billing is enabled". To test locally, run `vercel env pull` to refresh the gateway token in `.env.local`, which expires.
+
 ## Deploy
 
 The site deploys to Vercel as-is with zero config:
