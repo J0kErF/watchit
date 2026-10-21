@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getProgress, saveProgress } from "@/lib/library";
+import { getProgress, saveProgress, setSubtitleLanguage, useSubtitleLanguage } from "@/lib/library";
 import { formatDuration } from "@/lib/format";
+import { languageName } from "@/lib/languages";
 import type { TitleDetail } from "@/lib/types";
+import { SubtitleMenu } from "./SubtitleMenu";
+import { useSubtitles } from "./useSubtitles";
 
 export function Player({ title, initialEp }: { title: TitleDetail; initialEp: number }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ep, setEp] = useState(() => Math.min(Math.max(initialEp, 0), title.episodes.length - 1));
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const [showList, setShowList] = useState(false);
+  const [panel, setPanel] = useState<"episodes" | "subtitles" | null>(null);
   const episode = title.episodes[ep];
   const next = title.episodes[ep + 1];
   // Some Archive originals use codecs browsers can't decode; step through the other encodes.
@@ -19,6 +22,12 @@ export function Player({ title, initialEp }: { title: TitleDetail; initialEp: nu
   const sourceIndex = attempt.src === episode.src ? attempt.index : 0;
   const videoSrc = sources[sourceIndex];
   const lastSave = useRef(0);
+
+  // Silent films have no dialogue to transcribe.
+  const canSubtitle = !title.genres.includes("Silent");
+  const preferredLang = useSubtitleLanguage();
+  const subtitleLang = canSubtitle ? preferredLang : null;
+  const subtitles = useSubtitles(videoRef, { titleId: title.id, ep, videoKey: videoSrc, lang: subtitleLang });
 
   // Resume where the viewer left off, once per episode load.
   const resumeAt = useRef<number | null>(null);
@@ -85,16 +94,41 @@ export function Player({ title, initialEp }: { title: TitleDetail; initialEp: nu
             </p>
           )}
         </div>
+        {canSubtitle && (
+          <button
+            type="button"
+            onClick={() => setPanel((p) => (p === "subtitles" ? null : "subtitles"))}
+            aria-label="Subtitles"
+            className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
+              subtitleLang ? "bg-accent text-accent-ink hover:brightness-110" : "bg-white/10 hover:bg-white/20"
+            }`}
+          >
+            <span className="rounded-sm border border-current px-1 text-[10px] font-bold leading-4">CC</span>
+            <span className="hidden sm:inline">{subtitleLang ? languageName(subtitleLang) : "Subtitles"}</span>
+          </button>
+        )}
         {title.kind === "series" && (
           <button
             type="button"
-            onClick={() => setShowList((s) => !s)}
+            onClick={() => setPanel((p) => (p === "episodes" ? null : "episodes"))}
             className="shrink-0 rounded-full bg-white/10 px-4 py-2 text-sm transition hover:bg-white/20"
           >
             Episodes
           </button>
         )}
       </div>
+
+      {subtitles.state === "loading" && (
+        <p className="pointer-events-none absolute left-1/2 top-20 z-10 -translate-x-1/2 rounded-full bg-black/70 px-4 py-1.5 text-xs text-muted">
+          <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
+          Generating subtitles…
+        </p>
+      )}
+      {subtitles.state === "error" && (
+        <p className="absolute left-1/2 top-20 z-10 max-w-[90%] -translate-x-1/2 rounded-full bg-black/80 px-4 py-1.5 text-center text-xs text-foreground/90">
+          {subtitles.message}
+        </p>
+      )}
 
       <video
         key={videoSrc}
@@ -153,11 +187,15 @@ export function Player({ title, initialEp }: { title: TitleDetail; initialEp: nu
         </button>
       )}
 
-      {showList && (
+      {panel === "subtitles" && (
+        <SubtitleMenu value={subtitleLang} onChange={setSubtitleLanguage} onClose={() => setPanel(null)} />
+      )}
+
+      {panel === "episodes" && (
         <aside className="absolute inset-y-0 right-0 z-20 flex w-full max-w-sm flex-col border-l border-line bg-surface/95 backdrop-blur">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <h2 className="font-display text-2xl">Episodes</h2>
-            <button type="button" onClick={() => setShowList(false)} className="text-2xl text-muted hover:text-foreground" aria-label="Close episodes">
+            <button type="button" onClick={() => setPanel(null)} className="text-2xl text-muted hover:text-foreground" aria-label="Close episodes">
               ×
             </button>
           </div>
@@ -168,7 +206,7 @@ export function Player({ title, initialEp }: { title: TitleDetail; initialEp: nu
                   type="button"
                   onClick={() => {
                     setEp(e.index);
-                    setShowList(false);
+                    setPanel(null);
                   }}
                   className={`flex w-full items-baseline gap-3 px-5 py-3 text-left text-sm transition hover:bg-surface-2 ${
                     e.index === ep ? "text-accent" : ""

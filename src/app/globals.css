@@ -39,6 +39,15 @@ body {
   color: var(--accent-ink);
 }
 
+/* AI subtitles (native text tracks, so they also render in fullscreen) */
+video::cue {
+  background: rgb(0 0 0 / 0.72);
+  color: #fff;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 1.05em;
+  line-height: 1.35;
+}
+
 .no-scrollbar {
   scrollbar-width: none;
 }

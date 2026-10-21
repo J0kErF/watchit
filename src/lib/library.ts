@@ -19,6 +19,7 @@ export interface Progress extends SavedTitle {
   updatedAt: number;
 }
 
+const SUBS_KEY = "watchit:subtitles";
 const LIST_KEY = "watchit:list";
 const PROGRESS_KEY = "watchit:progress";
 const EVENT = "watchit:library";
@@ -79,6 +80,19 @@ export function useProgress() {
     () => read(PROGRESS_KEY, EMPTY_PROGRESS),
     () => EMPTY_PROGRESS,
   );
+}
+
+/** Chosen subtitle language (a BCP-47 code or "original"), or null when subtitles are off. */
+export function useSubtitleLanguage() {
+  return useSyncExternalStore(
+    subscribe,
+    () => read<string | null>(SUBS_KEY, null),
+    () => null,
+  );
+}
+
+export function setSubtitleLanguage(lang: string | null) {
+  write(SUBS_KEY, lang);
 }
 
 export function toggleWatchlist(title: SavedTitle) {
