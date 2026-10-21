@@ -9,6 +9,7 @@ const GENRE_ROWS = [
   { heading: "Laugh out loud", genres: ["Comedy"] },
   { heading: "Chills & thrills", genres: ["Horror", "Sci-Fi"] },
   { heading: "Animated", genres: ["Animation"] },
+  { heading: "Short films", genres: ["Short"] },
   { heading: "Silent era", genres: ["Silent"] },
 ];
 
@@ -16,12 +17,14 @@ export default async function HomePage() {
   const [featured, catalog] = await Promise.all([getTitle(FEATURED_ID), getCatalog()]);
   const movies = catalog.filter((t) => t.kind === "movie");
   const series = catalog.filter((t) => t.kind === "series");
+  const newest = movies.filter((t) => !t.genres.includes("Short")).sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
 
   return (
     <>
       {featured ? <Hero title={featured} eyebrow="Featured tonight" /> : <div className="h-20" />}
       <div className="relative z-10 -mt-10 space-y-2 pb-10">
         <ContinueWatching />
+        <Row heading="Newest releases" titles={newest.slice(0, 14)} href="/movies" />
         <Row heading="Classic series" titles={series} href="/series" />
         <Row heading="Popular movies" titles={movies.slice(0, 14)} href="/movies" />
         {GENRE_ROWS.map((row) => (

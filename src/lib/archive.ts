@@ -1,5 +1,5 @@
 import { cacheLife } from "next/cache";
-import { CATALOG, catalogEntry } from "./catalog";
+import { CATALOG, type CatalogEntry, catalogEntry } from "./catalog";
 import type { Episode, Kind, TitleDetail, TitleSummary } from "./types";
 
 const IA = "https://archive.org";
@@ -79,15 +79,15 @@ async function advancedSearch(q: string, rows: number, sort = "downloads desc"):
   return data.response?.docs ?? [];
 }
 
-function toSummary(doc: SearchDoc, kind: Kind, genres: string[], title?: string): TitleSummary {
+function toSummary(doc: SearchDoc, entry?: CatalogEntry): TitleSummary {
   return {
     id: doc.identifier,
-    kind,
-    title: title ?? cleanTitle(doc.title, doc.identifier),
-    year: parseYear(doc.year, doc.date),
-    description: cleanText(doc.description),
+    kind: entry?.kind ?? "movie",
+    title: entry?.title ?? cleanTitle(doc.title, doc.identifier),
+    year: entry?.year ?? parseYear(doc.year, doc.date),
+    description: entry?.description ?? cleanText(doc.description),
     poster: posterUrl(doc.identifier),
-    genres,
+    genres: entry?.genres ?? [],
     runtime: first(doc.runtime),
   };
 }
@@ -102,7 +102,7 @@ export async function getCatalog(): Promise<TitleSummary[]> {
   const byId = new Map(docs.map((d) => [d.identifier, d]));
   return CATALOG.flatMap((e) => {
     const doc = byId.get(e.id);
-    return doc ? [toSummary(doc, e.kind, e.genres, e.title)] : [];
+    return doc ? [toSummary(doc, e)] : [];
   });
 }
 
@@ -127,7 +127,7 @@ export async function searchTitles(query: string, type: Kind | "all" = "all"): P
   if (terms) {
     const q = `collection:feature_films AND mediatype:movies AND licenseurl:*publicdomain* AND title:(${terms}) ${SEARCH_EXCLUDE}`;
     try {
-      remote = (await advancedSearch(q, 36)).map((d) => toSummary(d, "movie", []));
+      remote = (await advancedSearch(q, 36)).map((d) => toSummary(d));
     } catch {
       remote = [];
     }
@@ -262,8 +262,8 @@ export async function getTitle(id: string): Promise<TitleDetail | null> {
     id,
     kind,
     title: entry?.title ?? cleanTitle(meta.title, id),
-    year: parseYear(meta.year, meta.date),
-    description: cleanText(meta.description),
+    year: entry?.year ?? parseYear(meta.year, meta.date),
+    description: entry?.description ?? cleanText(meta.description),
     poster: posterUrl(id),
     genres: entry?.genres ?? [],
     runtime: first(meta.runtime),
