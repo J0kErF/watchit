@@ -136,9 +136,6 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
         title={title.kind === "series" ? `${title.title} · ${episode.title}` : title.title}
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
-        // No allow-popups, allow-top-navigation or allow-modals: the player can't open ad tabs or
-        // windows, redirect the site, or show alert dialogs.
-        sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
         scrolling="no"
         className="w-full flex-1 border-0"
       />
