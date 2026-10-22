@@ -14,7 +14,7 @@ export async function saveLibrary(_prev: LibraryState, form: FormData): Promise<
   }
   const embedUrl = await resolveEmbedDomain(input);
   if (!embedUrl) {
-    return { ok: false, message: "That domain isn’t enabled on WatchIt. Ask the site owner to add it." };
+    return { ok: false, message: "That domain isn’t enabled on Jawy. Ask the site owner to add it." };
   }
   const host = new URL(embedUrl).hostname;
   jar.set(EMBED_COOKIE, host, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax", secure: true, httpOnly: true });

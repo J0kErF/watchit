@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Logo } from "./Logo";
 
 const LINKS = [
   { href: "/", label: "Home" },
@@ -34,8 +35,8 @@ export function Navbar() {
       }`}
     >
       <nav className="flex h-16 items-center gap-4 px-4 sm:gap-10 sm:px-12">
-        <Link href="/" className="font-display text-[2rem] leading-none tracking-wide text-accent drop-shadow">
-          WatchIt
+        <Link href="/" aria-label="Jawy home" className="shrink-0 drop-shadow">
+          <Logo className="h-9 w-auto" />
         </Link>
         <ul className="no-scrollbar flex flex-1 gap-4 overflow-x-auto text-sm sm:gap-6">
           {LINKS.map((l) => {

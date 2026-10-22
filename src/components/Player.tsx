@@ -7,7 +7,7 @@ import { formatDuration } from "@/lib/format";
 import type { TitleDetail } from "@/lib/types";
 
 // The site accent (--accent), for the embedded player's controls.
-const EMBED_THEME = "e50914";
+const EMBED_THEME = "ffb238";
 
 export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; initialEp: number; embedUrl: string }) {
   const frameRef = useRef<HTMLIFrameElement>(null);

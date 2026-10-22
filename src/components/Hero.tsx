@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatDuration } from "@/lib/format";
 import type { TitleDetail } from "@/lib/types";
+import { Mark } from "./Logo";
 import { Rating } from "./TitleCard";
 import { WatchlistButton } from "./WatchlistButton";
 
@@ -51,7 +52,7 @@ export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail;
       <div className="relative w-full max-w-3xl animate-fade-in px-4 sm:px-12">
         {eyebrow && (
           <p className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-foreground/90">
-            <span className="font-display text-2xl leading-none tracking-normal text-accent">W</span>
+            <Mark className="h-4 w-auto text-accent" />
             {eyebrow}
           </p>
         )}
@@ -66,7 +67,7 @@ export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail;
             <h1 className="sr-only">{title.title}</h1>
           </>
         ) : (
-          <h1 className="font-display text-6xl leading-[0.9] tracking-wide drop-shadow-lg sm:text-8xl">{title.title}</h1>
+          <h1 className="font-display text-5xl font-bold leading-[0.95] tracking-tight drop-shadow-lg sm:text-7xl">{title.title}</h1>
         )}
 
         <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-foreground/85 sm:text-base">

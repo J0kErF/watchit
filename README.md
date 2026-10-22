@@ -1,8 +1,21 @@
-# WatchIt
+# Jawy (جوّي)
 
 A serverless streaming site for movies and TV series. Titles come from [TMDB](https://www.themoviedb.org) and play in an embedded player. There's no video hosting and no database.
 
 Built with Next.js 16 (App Router, Cache Components) and Tailwind CSS 4.
+
+## Brand
+
+The logo, icons and colors live in `public/brand` (wordmark, Arabic wordmark, bilingual lockup and app icon, for dark and light backgrounds). The signature is the shadda (ّ) that sits on the و of جوّي, drawn over the w in the Latin wordmark and used alone as the app icon. `src/components/Logo.tsx` draws the same wordmark inline. Favicon, Apple icon, web app icons and the social card are in `src/app` and `public/icons`.
+
+| Color | Hex | Use |
+| --- | --- | --- |
+| Night | `#110E1A` | Background |
+| Sand | `#F6F0E4` | Text, wordmark |
+| Saffron | `#FFB238` | Accent, shadda, app icon |
+| Ember | `#D97F06` | Shadda on light backgrounds |
+
+Display type is Alexandria (also the face behind the Arabic wordmark); body text is Geist.
 
 ## Run it
 

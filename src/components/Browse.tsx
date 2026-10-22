@@ -46,7 +46,7 @@ export async function Browse({
     return (
       <div className="grid min-h-[70vh] place-items-center px-4 pt-16 text-center">
         <div className="max-w-md">
-          <p className="font-display text-5xl text-accent">Nothing to show yet</p>
+          <p className="font-display text-4xl font-bold tracking-tight text-accent">Nothing to show yet</p>
           <p className="mt-3 text-muted">
             Titles couldn’t be loaded from TMDB. Check that <code className="text-foreground">TMDB_API_KEY</code> or{" "}
             <code className="text-foreground">TMDB_READ_TOKEN</code> is set, then reload.

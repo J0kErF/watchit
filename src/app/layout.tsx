@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Bebas_Neue, Geist } from "next/font/google";
+import { Alexandria, Geist } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Logo } from "@/components/Logo";
 import { Navbar } from "@/components/Navbar";
 import "./globals.css";
 
@@ -10,18 +11,19 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const display = Bebas_Neue({
+const display = Alexandria({
   variable: "--font-display",
-  weight: "400",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: { default: "WatchIt — Movies & series", template: "%s · WatchIt" },
+  title: { default: "Jawy — Movies & series", template: "%s · Jawy" },
   description: "Trending movies, new series and all-time favorites, ready to watch.",
+  applicationName: "Jawy",
+  openGraph: { siteName: "Jawy", type: "website" },
 };
 
-export const viewport: Viewport = { themeColor: "#0b0b0c" };
+export const viewport: Viewport = { themeColor: "#110e1a" };
 
 const FOOTER_LINKS = [
   { href: "/", label: "Home" },
@@ -43,8 +45,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main className="flex-1">{children}</main>
         <footer className="mt-10 border-t border-line px-4 py-10 text-sm text-muted sm:px-12">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-            <Link href="/" className="font-display text-3xl leading-none tracking-wide text-accent">
-              WatchIt
+            <Link href="/" aria-label="Jawy home">
+              <Logo className="h-10 w-auto" />
             </Link>
             <ul className="grid grid-cols-2 gap-x-10 gap-y-2 sm:grid-cols-3">
               {FOOTER_LINKS.map((l) => (
