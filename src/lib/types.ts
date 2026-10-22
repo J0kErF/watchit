@@ -26,7 +26,7 @@ export interface Episode {
   duration?: number;
   overview?: string;
   still?: string;
-  /** Path on the embed host: "/550" for a movie, "/1399/1/1" for an episode. */
+  /** Path on the embed host, e.g. "/movie/550" or "/tv/1399/1/1". */
   path: string;
 }
 

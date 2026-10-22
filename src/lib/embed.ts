@@ -7,6 +7,18 @@ export const EMBED_URL = (process.env.EMBED_BASE_URL ?? "https://test.vc").repla
 
 export const EMBED_COOKIE = "watchit-embed";
 
+// Player paths on the embed host. Placeholders: {id} (TMDb id), {season}, {episode}.
+const MOVIE_PATH = process.env.EMBED_MOVIE_PATH ?? "/movie/{id}";
+const TV_PATH = process.env.EMBED_TV_PATH ?? "/tv/{id}/{season}/{episode}";
+
+const fill = (template: string, values: Record<string, number>) =>
+  template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
+
+/** The player path for a movie, or for an episode when `season` and `episode` are given. */
+export function embedPath(id: number, season?: number, episode?: number) {
+  return season === undefined || episode === undefined ? fill(MOVIE_PATH, { id }) : fill(TV_PATH, { id, season, episode });
+}
+
 // Viewers can switch to their own library's embed host, from the hosts the site owner allows: the
 // built-in ones (EMBED_HOSTS, comma-separated, "*.example.com" for subdomains; defaults to the default
 // host and its subdomains) plus the ones added in the admin portal.

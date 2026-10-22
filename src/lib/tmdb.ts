@@ -1,4 +1,5 @@
 import { cacheLife } from "next/cache";
+import { embedPath } from "./embed";
 import { type CastMember, type Episode, type Kind, TITLE_ID_PATTERN, type TitleDetail, type TitleSummary } from "./types";
 
 const API = "https://api.themoviedb.org/3";
@@ -210,7 +211,7 @@ async function tmdbDetail(type: MediaType, id: number): Promise<TitleDetail | nu
 
   let episodes: Episode[];
   if (type === "movie") {
-    episodes = [{ index: 0, title, duration: d.runtime ? d.runtime * 60 : undefined, path: `/${id}` }];
+    episodes = [{ index: 0, title, duration: d.runtime ? d.runtime * 60 : undefined, path: embedPath(id) }];
     cacheLife("days");
   } else {
     // Season 0 holds specials; list the regular seasons, aired episodes only.
@@ -233,7 +234,7 @@ async function tmdbDetail(type: MediaType, id: number): Promise<TitleDetail | nu
         duration: e.runtime ? e.runtime * 60 : undefined,
         overview: e.overview || undefined,
         still: image("w300", e.still_path),
-        path: `/${id}/${e.season_number}/${e.episode_number}`,
+        path: embedPath(id, e.season_number, e.episode_number),
       }));
   }
   if (episodes.length === 0) return null;
