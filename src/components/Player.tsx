@@ -138,7 +138,6 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
         allowFullScreen
         scrolling="no"
         className="w-full flex-1 border-0"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
       />
 
       {next && (
