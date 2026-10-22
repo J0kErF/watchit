@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EMBED_URL } from "@/lib/embed";
 import { formatDuration } from "@/lib/format";
 import type { TitleDetail } from "@/lib/types";
 import { Mark } from "./Logo";
@@ -38,6 +39,8 @@ export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail;
 
   return (
     <section className="relative flex min-h-[80svh] items-end overflow-hidden pb-14 pt-28 sm:min-h-[92svh] sm:pb-24">
+      {/* Open the connection to the player host before Play is pressed, so the player starts sooner. */}
+      <link rel="preconnect" href={EMBED_URL} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={title.backdrop}

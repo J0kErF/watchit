@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { preconnect } from "react-dom";
 import { getProgress, saveProgress } from "@/lib/library";
 import { formatDuration } from "@/lib/format";
 import type { TitleDetail } from "@/lib/types";
@@ -10,6 +11,7 @@ import type { TitleDetail } from "@/lib/types";
 const EMBED_THEME = "ffb238";
 
 export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; initialEp: number; embedUrl: string }) {
+  preconnect(embedUrl);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [ep, setEp] = useState(() => Math.min(Math.max(initialEp, 0), title.episodes.length - 1));
   const [showEpisodes, setShowEpisodes] = useState(false);
