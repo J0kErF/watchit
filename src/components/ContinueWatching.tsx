@@ -2,53 +2,61 @@
 
 import Link from "next/link";
 import { clearProgress, useProgress } from "@/lib/library";
+import { TITLE_ID_PATTERN } from "@/lib/types";
+import { RowScroller } from "./RowScroller";
 
 export function ContinueWatching() {
   const progress = useProgress();
+  // Progress saved for titles from removed sources has ids that no longer resolve.
   const items = Object.values(progress)
-    .filter((p) => p.duration > 0 && p.time / p.duration < 0.95)
+    .filter((p) => TITLE_ID_PATTERN.test(p.id) && p.duration > 0 && p.time / p.duration < 0.95)
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, 12);
 
   if (items.length === 0) return null;
 
   return (
-    <section className="py-4">
-      <h2 className="mb-3 px-4 font-display text-2xl sm:px-10 sm:text-3xl">Continue watching</h2>
-      <div className="no-scrollbar flex snap-x gap-3 overflow-x-auto scroll-px-4 px-4 pb-2 sm:gap-4 sm:scroll-px-10 sm:px-10">
+    <section className="py-2 sm:py-3" aria-label="Continue watching">
+      <h2 className="px-4 text-lg font-semibold tracking-tight sm:px-12 sm:text-xl lg:text-2xl">Continue watching</h2>
+      <RowScroller label="Continue watching">
         {items.map((p) => (
-          <div key={p.id} className="group relative w-60 shrink-0 snap-start sm:w-72">
+          <div key={p.id} className="group relative w-64 shrink-0 snap-start sm:w-72 lg:w-80">
             <Link href={`/watch/${p.id}?ep=${p.ep}`} className="block">
-              <div className="relative aspect-video overflow-hidden rounded-md bg-surface-2 ring-1 ring-line transition group-hover:ring-accent/70">
+              <div className="relative aspect-video overflow-hidden rounded-md bg-surface-2 ring-1 ring-white/5 transition group-hover:ring-white/50">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.poster} alt="" className="h-full w-full object-cover opacity-80" />
+                <img src={p.backdrop ?? p.poster} alt="" className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
                 <span className="absolute inset-0 grid place-items-center opacity-0 transition group-hover:opacity-100">
-                  <span className="grid h-12 w-12 place-items-center rounded-full bg-accent text-accent-ink">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <span className="grid h-12 w-12 place-items-center rounded-full border-2 border-white bg-black/50">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                       <path d="M7 4.5v15l13-7.5z" />
                     </svg>
                   </span>
                 </span>
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
-                  <div className="h-full bg-accent" style={{ width: `${(p.time / p.duration) * 100}%` }} />
+                <div className="absolute inset-x-3 bottom-3">
+                  <p className="line-clamp-1 text-sm font-semibold sm:text-base">{p.title}</p>
+                  <p className="line-clamp-1 text-xs text-white/75">
+                    {p.kind === "series" && p.epTitle
+                      ? `${p.epLabel ?? `Ep ${p.ep + 1}`} · ${p.epTitle}`
+                      : `${Math.ceil((p.duration - p.time) / 60)} min left`}
+                  </p>
+                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/25">
+                    <div className="h-full bg-accent" style={{ width: `${(p.time / p.duration) * 100}%` }} />
+                  </div>
                 </div>
               </div>
-              <p className="mt-2 line-clamp-1 text-sm font-medium">{p.title}</p>
-              <p className="line-clamp-1 text-xs text-muted">
-                {p.kind === "series" && p.epTitle ? `Ep ${p.ep + 1} · ${p.epTitle}` : `${Math.ceil((p.duration - p.time) / 60)} min left`}
-              </p>
             </Link>
             <button
               type="button"
               onClick={() => clearProgress(p.id)}
               aria-label={`Remove ${p.title} from Continue watching`}
-              className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-muted opacity-0 transition hover:text-foreground focus:opacity-100 group-hover:opacity-100"
+              className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-white/80 opacity-0 transition hover:text-white focus:opacity-100 group-hover:opacity-100"
             >
               ×
             </button>
           </div>
         ))}
-      </div>
+      </RowScroller>
     </section>
   );
 }

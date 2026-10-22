@@ -1,40 +1,36 @@
+import { Suspense } from "react";
+import { Browse, BrowseSkeleton } from "@/components/Browse";
 import { ContinueWatching } from "@/components/ContinueWatching";
-import { Hero } from "@/components/Hero";
-import { Row } from "@/components/Row";
-import { getCatalog, getTitle } from "@/lib/archive";
-import { FEATURED_ID } from "@/lib/catalog";
+import { discover, getNewSeries, getTmdbList } from "@/lib/tmdb";
 
-const GENRE_ROWS = [
-  { heading: "Noir & thrillers", genres: ["Noir", "Thriller", "Mystery"] },
-  { heading: "Laugh out loud", genres: ["Comedy"] },
-  { heading: "Chills & thrills", genres: ["Horror", "Sci-Fi"] },
-  { heading: "Animated", genres: ["Animation"] },
-  { heading: "Short films", genres: ["Short"] },
-  { heading: "Silent era", genres: ["Silent"] },
-];
-
-export default async function HomePage() {
-  const [featured, catalog] = await Promise.all([getTitle(FEATURED_ID), getCatalog()]);
-  const movies = catalog.filter((t) => t.kind === "movie");
-  const series = catalog.filter((t) => t.kind === "series");
-  const newest = movies.filter((t) => !t.genres.includes("Short")).sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
-
+export default function HomePage() {
   return (
-    <>
-      {featured ? <Hero title={featured} eyebrow="Featured tonight" /> : <div className="h-20" />}
-      <div className="relative z-10 -mt-10 space-y-2 pb-10">
+    <Suspense fallback={<BrowseSkeleton />}>
+      <Browse
+        featured={getTmdbList("/trending/all/day")}
+        eyebrow="Trending today"
+        rows={[
+          { heading: "Top 10 movies today", titles: getTmdbList("/trending/movie/day"), top10: true },
+          { heading: "Trending now", titles: getTmdbList("/trending/all/week") },
+          { heading: "New series", titles: getNewSeries() },
+          { heading: "New releases", titles: getTmdbList("/movie/now_playing") },
+          { heading: "Top 10 series today", titles: getTmdbList("/trending/tv/day"), top10: true },
+          { heading: "Popular movies", titles: getTmdbList("/movie/popular") },
+          { heading: "Popular series", titles: getTmdbList("/tv/popular") },
+          { heading: "New episodes this week", titles: getTmdbList("/tv/on_the_air") },
+          { heading: "Action & adventure", titles: discover("movie", "28,12", "|") },
+          { heading: "Critically acclaimed movies", titles: getTmdbList("/movie/top_rated") },
+          { heading: "Comedies", titles: discover("movie", "35") },
+          { heading: "Binge-worthy series", titles: getTmdbList("/tv/top_rated") },
+          { heading: "Sci-fi & fantasy", titles: discover("movie", "878,14", "|") },
+          { heading: "Crime TV", titles: discover("tv", "80") },
+          { heading: "Horror", titles: discover("movie", "27") },
+          { heading: "Animation", titles: discover("movie", "16") },
+          { heading: "Coming soon", titles: getTmdbList("/movie/upcoming") },
+        ]}
+      >
         <ContinueWatching />
-        <Row heading="Newest releases" titles={newest.slice(0, 14)} href="/movies" />
-        <Row heading="Classic series" titles={series} href="/series" />
-        <Row heading="Popular movies" titles={movies.slice(0, 14)} href="/movies" />
-        {GENRE_ROWS.map((row) => (
-          <Row
-            key={row.heading}
-            heading={row.heading}
-            titles={catalog.filter((t) => t.genres.some((g) => row.genres.includes(g)))}
-          />
-        ))}
-      </div>
-    </>
+      </Browse>
+    </Suspense>
   );
 }

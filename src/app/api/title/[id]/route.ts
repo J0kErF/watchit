@@ -1,4 +1,4 @@
-import { getTitle } from "@/lib/archive";
+import { getTitle } from "@/lib/titles";
 
 export async function GET(_request: Request, ctx: RouteContext<"/api/title/[id]">) {
   const { id } = await ctx.params;

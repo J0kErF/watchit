@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0c0b0a;
-  --surface: #171513;
-  --surface-2: #221f1b;
-  --line: #2e2a25;
-  --foreground: #f3ede4;
-  --muted: #a39b8f;
-  --accent: #e8a33d;
-  --accent-ink: #1a1206;
+  --background: #0b0b0c;
+  --surface: #161618;
+  --surface-2: #232326;
+  --line: #2c2c30;
+  --foreground: #f5f5f1;
+  --muted: #a3a3a8;
+  --accent: #e50914;
+  --accent-ink: #ffffff;
 }
 
 @theme inline {
@@ -39,15 +39,6 @@ body {
   color: var(--accent-ink);
 }
 
-/* AI subtitles (native text tracks, so they also render in fullscreen) */
-video::cue {
-  background: rgb(0 0 0 / 0.72);
-  color: #fff;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  font-size: 1.05em;
-  line-height: 1.35;
-}
-
 .no-scrollbar {
   scrollbar-width: none;
 }
@@ -55,13 +46,23 @@ video::cue {
   display: none;
 }
 
-/* Faint film grain over the whole page */
-.grain::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 60;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+/* Outlined rank numerals on Top 10 rows */
+.rank-numeral {
+  color: var(--background);
+  -webkit-text-stroke: 3px #5c5c63;
+  paint-order: stroke fill;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out both;
 }

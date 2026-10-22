@@ -8,18 +8,21 @@ export interface SavedTitle {
   kind: Kind;
   title: string;
   poster: string;
+  /** Landscape artwork for Continue watching. */
+  backdrop?: string;
   year?: number;
 }
 
 export interface Progress extends SavedTitle {
   ep: number;
+  /** "S2 E5" for episodes with season numbers. */
+  epLabel?: string;
   epTitle?: string;
   time: number;
   duration: number;
   updatedAt: number;
 }
 
-const SUBS_KEY = "watchit:subtitles";
 const LIST_KEY = "watchit:list";
 const PROGRESS_KEY = "watchit:progress";
 const EVENT = "watchit:library";
@@ -80,19 +83,6 @@ export function useProgress() {
     () => read(PROGRESS_KEY, EMPTY_PROGRESS),
     () => EMPTY_PROGRESS,
   );
-}
-
-/** Chosen subtitle language (a BCP-47 code or "original"), or null when subtitles are off. */
-export function useSubtitleLanguage() {
-  return useSyncExternalStore(
-    subscribe,
-    () => read<string | null>(SUBS_KEY, null),
-    () => null,
-  );
-}
-
-export function setSubtitleLanguage(lang: string | null) {
-  write(SUBS_KEY, lang);
 }
 
 export function toggleWatchlist(title: SavedTitle) {

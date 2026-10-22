@@ -49,9 +49,9 @@ export function SearchView() {
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search classic movies & series…"
+        placeholder="Search movies & series…"
         aria-label="Search"
-        className="w-full border-b border-line bg-transparent pb-3 font-display text-4xl outline-none placeholder:text-muted/60 focus:border-accent sm:text-6xl"
+        className="w-full border-b border-line bg-transparent pb-3 text-3xl font-semibold tracking-tight outline-none placeholder:text-muted/50 focus:border-white/60 sm:text-5xl"
       />
       <div className="mb-8 mt-5 flex gap-2">
         {TYPES.map((t) => (
@@ -70,11 +70,11 @@ export function SearchView() {
       </div>
 
       {state.status === "idle" && (
-        <p className="text-muted">Try “Chaplin”, “noir”, “Sherlock” or “western”.</p>
+        <p className="text-muted">Search movies and series by title.</p>
       )}
       {state.status === "error" && <p className="text-muted">Search is unavailable right now. Try again in a moment.</p>}
       {state.status === "done" && state.results.length === 0 && (
-        <p className="text-muted">No public-domain titles match “{query}”.</p>
+        <p className="text-muted">No titles match “{query}”.</p>
       )}
       <div className={state.status === "loading" ? "opacity-50 transition-opacity" : "transition-opacity"}>
         <Grid titles={state.results} />

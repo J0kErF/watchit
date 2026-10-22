@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Search" };
 
 export default function SearchPage() {
   return (
-    <div className="px-4 pb-16 pt-28 sm:px-10">
+    <div className="px-4 pb-16 pt-28 sm:px-12">
       <Suspense>
         <SearchView />
       </Suspense>

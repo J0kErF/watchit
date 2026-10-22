@@ -1,6 +1,6 @@
 # WatchIt
 
-A serverless streaming site for classic movies and TV series. Every title is public domain or openly licensed and streams straight from the [Internet Archive](https://archive.org), so there's no video hosting, no database and no API keys.
+A serverless streaming site for movies and TV series. Titles come from [TMDB](https://www.themoviedb.org) and play in an embedded player. There's no video hosting and no database.
 
 Built with Next.js 16 (App Router, Cache Components) and Tailwind CSS 4.
 
@@ -14,24 +14,30 @@ npm run build      # production build
 
 ## How it works
 
-- `src/lib/catalog.ts` lists the curated titles by Archive identifier. To add one, copy the identifier from `archive.org/details/<identifier>`, then set `kind` and `genres`.
-- `src/lib/archive.ts` fetches metadata from the Archive and caches it with `"use cache"` (titles for a day, searches for an hour). It picks a browser-playable MP4 per video, turns multi-file TV items into episode lists, and refuses any item that isn't marked public domain or Creative Commons.
-- Only catalog titles can be searched or played by default. Archive uploaders set license flags themselves, and some are wrong (copyrighted films marked public domain), so every title you add should be checked by hand. Setting `ARCHIVE_OPEN_SEARCH=true` also opens search and playback to the Archive's whole `feature_films` collection, which relies on those uploader flags.
 - `/api/search` and `/api/title/[id]` are serverless route handlers.
 - My List, Continue Watching and resume position are stored in the viewer's browser (`localStorage`). There are no accounts.
 
-## AI subtitles
+## Titles (TMDB + embed player)
 
-Press **CC** in the player and pick a language (or "Original language").
+- `src/lib/tmdb.ts` is the only title source. It builds every row (Top 10 today, Trending, New series, New releases, Popular, Top rated, Coming soon and genre rows from `/discover`), search, and title pages from the TMDB API, cached with `"use cache"` (lists for hours, title details for days). Ids look like `tmdb-movie-278` and `tmdb-tv-1399`.
+- The home, Movies and Series pages share `src/components/Browse.tsx`: a billboard for today's top trending title (with its TMDB logo art when there is one), then rows. A title appears in at most two rows per page.
+- Titles play in an iframe at `EMBED_BASE_URL/{tmdbId}` (movies) or `EMBED_BASE_URL/{tmdbId}/{season}/{episode}` (series). Every TMDB title is listed; whether it plays depends on the embed host. The embed host only answers safelisted sites, so add the production domain to its safelist.
+- On the **Library** page (`/library`) a viewer can switch to their own library's embed domain, from the hosts in `EMBED_HOSTS`. The choice is a cookie that only the watch page reads.
+- The player listens for the embed's `postMessage` playback updates to keep Continue Watching and resume working, accepting messages only from the embed's domain.
 
-1. `/api/subtitles` cuts the 30-second window being watched out of the video's audio with ffmpeg.
-2. It transcribes the window with `openai/whisper-1` through Vercel AI Gateway.
-3. It translates the cues with `google/gemini-3.5-flash-lite`.
-4. The player loads them into a native text track one window ahead of playback, so they also show in fullscreen.
+Environment variables:
 
-Results are stored in Vercel Runtime Cache, keyed by title, episode, window and language. Each window is paid for once per language. Silent films don't offer subtitles.
+| Name | Required | Purpose |
+| --- | --- | --- |
+| `TMDB_API_KEY` or `TMDB_READ_TOKEN` | One of them | TMDB v3 API key, or v4 API Read Access Token. Without either the site shows no titles. |
+| `EMBED_BASE_URL` | No | Default embed host, `https://test.vc` if unset. |
+| `EMBED_HOSTS` | No | Hosts viewers may switch to on the Library page, comma-separated; `*.example.com` allows subdomains. Defaults to the default host and its subdomains. |
+| `ADMIN_PASSWORD` | For the admin portal | Password for `/admin`. Changing it signs everyone out. |
+| `BLOB_READ_WRITE_TOKEN` | For the admin portal | Vercel Blob store that keeps the domains added in `/admin`. Set when the store is connected to the project. |
 
-AI Gateway needs a card on the Vercel account. Until then the player shows "AI subtitles turn on once AI Gateway billing is enabled". To test locally, run `vercel env pull` to refresh the gateway token in `.env.local`, which expires.
+### Admin portal
+
+`/admin` (not linked from the site) lets the owner add or remove the embed domains viewers can connect on the Library page, on top of the built-in `EMBED_HOSTS`. Changes apply at once on the server that made them and within about a minute everywhere else, with no redeploy. The list is stored in Vercel Blob at `admin/embed-hosts.json`. Sign-in sets a signed, 7-day, `httpOnly` cookie.
 
 ## Deploy
 

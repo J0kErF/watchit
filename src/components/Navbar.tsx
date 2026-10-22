@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/movies", label: "Movies" },
   { href: "/series", label: "Series" },
   { href: "/my-list", label: "My List" },
+  { href: "/library", label: "Library" },
 ];
 
 export function Navbar() {
@@ -29,12 +30,12 @@ export function Navbar() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        scrolled ? "bg-background/95 backdrop-blur" : "bg-gradient-to-b from-black/80 to-transparent"
+        scrolled ? "bg-background/95 shadow-lg shadow-black/40 backdrop-blur" : "bg-gradient-to-b from-black/80 via-black/40 to-transparent"
       }`}
     >
-      <nav className="flex h-16 items-center gap-4 px-4 sm:gap-8 sm:px-10">
-        <Link href="/" className="font-display text-3xl leading-none tracking-tight">
-          Watch<span className="text-accent italic">It</span>
+      <nav className="flex h-16 items-center gap-4 px-4 sm:gap-10 sm:px-12">
+        <Link href="/" className="font-display text-[2rem] leading-none tracking-wide text-accent drop-shadow">
+          WatchIt
         </Link>
         <ul className="no-scrollbar flex flex-1 gap-4 overflow-x-auto text-sm sm:gap-6">
           {LINKS.map((l) => {
@@ -43,7 +44,8 @@ export function Navbar() {
               <li key={l.href} className="shrink-0">
                 <Link
                   href={l.href}
-                  className={active ? "font-medium text-foreground" : "text-muted transition-colors hover:text-foreground"}
+                  aria-current={active ? "page" : undefined}
+                  className={active ? "font-semibold text-foreground" : "text-foreground/70 transition-colors hover:text-foreground/95"}
                 >
                   {l.label}
                 </Link>
@@ -65,7 +67,7 @@ export function Navbar() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search titles"
             aria-label="Search titles"
-            className="w-44 rounded-full border border-line bg-surface/80 px-4 py-1.5 text-sm outline-none placeholder:text-muted focus:w-60 focus:border-accent lg:w-56 lg:focus:w-72 transition-[width,border-color]"
+            className="w-44 rounded-md border border-white/20 bg-black/50 px-3.5 py-1.5 text-sm outline-none transition-[width,border-color] placeholder:text-muted focus:w-60 focus:border-white/70 lg:w-56 lg:focus:w-72"
           />
         </form>
         <Link href="/search" aria-label="Search" className="text-muted hover:text-foreground sm:hidden">
