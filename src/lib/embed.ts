@@ -11,7 +11,7 @@ export const EMBED_COOKIE = "watchit-embed";
 const MOVIE_PATH = process.env.EMBED_MOVIE_PATH ?? "/movie/{id}";
 const TV_PATH = process.env.EMBED_TV_PATH ?? "/tv/{id}/{season}/{episode}";
 
-const fill = (template: string, values: Record<string, number>) =>
+export const fill = (template: string, values: Record<string, number>) =>
   template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
 
 /** The player path for a movie, or for an episode when `season` and `episode` are given. */
@@ -53,7 +53,7 @@ export function toHostPattern(input: string): string | null {
   return toHost(value);
 }
 
-const matches = (host: string, patterns: string[]) =>
+export const matches = (host: string, patterns: string[]) =>
   patterns.some((p) => (p.startsWith("*.") ? host.endsWith(p.slice(1)) : host === p));
 
 const HOSTS_BLOB = "admin/embed-hosts.json";

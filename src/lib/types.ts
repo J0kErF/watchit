@@ -46,3 +46,22 @@ export interface TitleDetail extends TitleSummary {
   seasons?: number;
   episodes: Episode[];
 }
+
+export interface Subtitle {
+  /** BCP 47 language code, e.g. "en" or "ar". */
+  lang: string;
+  label: string;
+  /** WebVTT file. */
+  url: string;
+}
+
+/** A video the built-in player can play directly. */
+export interface Source {
+  label: string;
+  /** "hls" for .m3u8 playlists, "file" for MP4 or WebM. */
+  kind: "hls" | "file";
+  url: string;
+  subtitles: Subtitle[];
+  /** WebVTT file of timeline preview images (sprites with #xywh=), WebP or JPEG. */
+  thumbnails?: string;
+}

@@ -5,28 +5,82 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { preconnect } from "react-dom";
 import { getProgress, saveProgress } from "@/lib/library";
 import { formatDuration } from "@/lib/format";
-import type { TitleDetail } from "@/lib/types";
+import type { Source, TitleDetail } from "@/lib/types";
+import { VideoPlayer, type PlayerServer } from "./player/VideoPlayer";
 
 // The site accent (--accent), for the embedded player's controls.
 const EMBED_THEME = "ffb238";
+const EMBED_KEY = "embed";
 
-export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; initialEp: number; embedUrl: string }) {
+const sourceKey = (s: Source, i: number) => `source:${i}:${s.label}`;
+
+/**
+ * The watch screen. Episodes with direct sources play in the built-in player, with the embed host as
+ * the last server; the rest play from the embed host.
+ */
+export function Player({
+  title,
+  initialEp,
+  embedUrl,
+  initialSources,
+  sourcesEnabled,
+}: {
+  title: TitleDetail;
+  initialEp: number;
+  embedUrl: string;
+  /** Direct sources for `initialEp`. */
+  initialSources: Source[];
+  /** Whether the site has a source API, so other episodes are worth looking up. */
+  sourcesEnabled: boolean;
+}) {
   preconnect(embedUrl);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [ep, setEp] = useState(() => Math.min(Math.max(initialEp, 0), title.episodes.length - 1));
+  const [loaded, setLoaded] = useState<{ ep: number; sources: Source[] }>(() => ({ ep, sources: initialSources }));
+  // The server the viewer picked, kept across episodes when the next one has it too.
+  const [chosen, setChosen] = useState<string | null>(null);
   const [showEpisodes, setShowEpisodes] = useState(false);
   const episode = title.episodes[ep];
   const next = title.episodes[ep + 1];
   const seasonLabel = episode.season && episode.number ? `S${episode.season} E${episode.number}` : undefined;
   const src = embedUrl + episode.path;
   const lastSave = useRef(0);
+  // The embedded player's last reported position, for switching servers mid-episode.
+  const lastTime = useRef(0);
 
-  // Resume where the viewer left off, once per episode load.
+  const ready = loaded.ep === ep || !sourcesEnabled;
+  const sources = loaded.ep === ep ? loaded.sources : [];
+  const servers: PlayerServer[] = [
+    ...sources.map((s, i) => ({ key: sourceKey(s, i), label: s.label })),
+    { key: EMBED_KEY, label: sources.length ? "Embedded player" : new URL(embedUrl).hostname },
+  ];
+  const server = servers.find((s) => s.key === chosen)?.key ?? servers[0].key;
+  const source = sources.find((s, i) => sourceKey(s, i) === server);
+
+  // Direct sources for episodes after the first one.
+  useEffect(() => {
+    if (!sourcesEnabled || loaded.ep === ep) return;
+    const ctrl = new AbortController();
+    fetch(`/api/sources/${title.id}?ep=${ep}`, { signal: ctrl.signal })
+      .then((res) => (res.ok ? res.json() : []))
+      .catch(() => [])
+      .then((list: Source[]) => {
+        if (!ctrl.signal.aborted) setLoaded({ ep, sources: Array.isArray(list) ? list : [] });
+      });
+    return () => ctrl.abort();
+  }, [ep, loaded.ep, sourcesEnabled, title.id]);
+
+  // Resume where the viewer left off, once per episode load, or where they were when switching servers.
   const resumeAt = useRef<number | null>(null);
   useEffect(() => {
     const saved = getProgress(title.id);
     resumeAt.current = saved && saved.ep === ep && saved.time / saved.duration < 0.95 ? saved.time : null;
   }, [ep, title.id]);
+
+  const switchServer = (key: string, time: number) => {
+    resumeAt.current = time;
+    setChosen(key);
+  };
 
   // The embedded player takes its start time as a URL parameter, which comes from localStorage,
   // so the URL is set after hydration, once per episode.
@@ -43,7 +97,7 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
     }).toString();
     if (resumeAt.current) url.searchParams.set("startAt", String(Math.floor(resumeAt.current)));
     frame.src = url.href;
-  }, [src]);
+  }, [src, server, ready]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -78,6 +132,7 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
   };
 
   const onPlayerMessage = useEffectEvent((e: MessageEvent) => {
+    if (source) return;
     const host = new URL(embedUrl).hostname.replace(/^www\./, "");
     let origin: string;
     try {
@@ -88,6 +143,7 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
     if (origin !== host && !origin.endsWith(`.${host}`)) return;
     const update = readPlayerMessage(e.data);
     if (!update) return;
+    if (update.time !== undefined) lastTime.current = update.time;
     if (update.time !== undefined && update.duration) {
       if (update.event === "pause" || update.event === "ended") persist(update.time, update.duration);
       else persistThrottled(update.time, update.duration);
@@ -100,6 +156,84 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
     window.addEventListener("message", listener);
     return () => window.removeEventListener("message", listener);
   }, []);
+
+  const heading = title.title;
+  const subheading = title.kind === "series" ? `${seasonLabel ?? `Episode ${ep + 1}`} · ${episode.title}` : undefined;
+
+  const episodesPanel = showEpisodes && (
+    <aside className="fixed inset-y-0 right-0 z-[80] flex w-full max-w-sm flex-col border-l border-line bg-surface/95 backdrop-blur">
+      <div className="flex items-center justify-between border-b border-line px-5 py-4">
+        <h2 className="text-xl font-semibold">Episodes</h2>
+        <button type="button" onClick={() => setShowEpisodes(false)} className="text-2xl text-muted hover:text-foreground" aria-label="Close episodes">
+          ×
+        </button>
+      </div>
+      <ol className="flex-1 overflow-y-auto">
+        {title.episodes.map((e, i) => (
+          <li key={e.path}>
+            {e.season && e.season !== title.episodes[i - 1]?.season && (
+              <p className="px-5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted">Season {e.season}</p>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setEp(e.index);
+                setShowEpisodes(false);
+              }}
+              className={`flex w-full items-baseline gap-3 px-5 py-3 text-left text-sm transition hover:bg-surface-2 ${
+                e.index === ep ? "text-accent" : ""
+              }`}
+            >
+              <span className="w-6 shrink-0 text-muted tabular-nums">{e.number ?? e.index + 1}</span>
+              <span className="flex-1">{e.title}</span>
+              <span className="shrink-0 text-xs text-muted">{formatDuration(e.duration)}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </aside>
+  );
+
+  if (!ready) {
+    return (
+      <div className="fixed inset-0 z-[70] grid place-items-center bg-black">
+        <span className="h-16 w-16 animate-spin rounded-full border-4 border-white/20 border-t-accent" aria-label="Loading" />
+      </div>
+    );
+  }
+
+  if (source) {
+    return (
+      <>
+        <VideoPlayer
+          key={`${ep}:${server}`}
+          source={source}
+          heading={heading}
+          subheading={subheading}
+          description={title.kind === "series" ? (episode.overview ?? title.description) : title.description}
+          backHref={`/title/${title.id}`}
+          poster={episode.still ?? title.backdrop}
+          getStartAt={() => resumeAt.current}
+          next={
+            next
+              ? {
+                  label: next.season && next.number ? `S${next.season} E${next.number}` : `Episode ${next.index + 1}`,
+                  title: next.title,
+                  still: next.still,
+                  onPlay: () => setEp(ep + 1),
+                }
+              : undefined
+          }
+          servers={servers}
+          server={server}
+          onServer={switchServer}
+          onEpisodes={title.kind === "series" ? () => setShowEpisodes((s) => !s) : undefined}
+          onProgress={(time, duration, final) => (final ? persist(time, duration) : persistThrottled(time, duration))}
+        />
+        {episodesPanel}
+      </>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[70] flex flex-col bg-black">
@@ -114,13 +248,23 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
           </svg>
         </Link>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-semibold sm:text-xl">{title.title}</p>
-          {title.kind === "series" && (
-            <p className="truncate text-xs text-muted sm:text-sm">
-              {seasonLabel ?? `Episode ${ep + 1}`} · {episode.title}
-            </p>
-          )}
+          <p className="truncate text-lg font-semibold sm:text-xl">{heading}</p>
+          {subheading && <p className="truncate text-xs text-muted sm:text-sm">{subheading}</p>}
         </div>
+        {servers.length > 1 && (
+          <select
+            aria-label="Server"
+            value={server}
+            onChange={(e) => switchServer(e.target.value, lastTime.current || (resumeAt.current ?? 0))}
+            className="shrink-0 rounded-full bg-white/10 px-4 py-2 text-sm outline-none transition hover:bg-white/20"
+          >
+            {servers.map((s) => (
+              <option key={s.key} value={s.key} className="bg-surface">
+                {s.label}
+              </option>
+            ))}
+          </select>
+        )}
         {title.kind === "series" && (
           <button
             type="button"
@@ -135,7 +279,7 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
       <iframe
         key={src}
         ref={frameRef}
-        title={title.kind === "series" ? `${title.title} · ${episode.title}` : title.title}
+        title={subheading ? `${heading} · ${episode.title}` : heading}
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
         scrolling="no"
@@ -152,39 +296,7 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
         </button>
       )}
 
-      {showEpisodes && (
-        <aside className="absolute inset-y-0 right-0 z-20 flex w-full max-w-sm flex-col border-l border-line bg-surface/95 backdrop-blur">
-          <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <h2 className="text-xl font-semibold">Episodes</h2>
-            <button type="button" onClick={() => setShowEpisodes(false)} className="text-2xl text-muted hover:text-foreground" aria-label="Close episodes">
-              ×
-            </button>
-          </div>
-          <ol className="flex-1 overflow-y-auto">
-            {title.episodes.map((e, i) => (
-              <li key={e.path}>
-                {e.season && e.season !== title.episodes[i - 1]?.season && (
-                  <p className="px-5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted">Season {e.season}</p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEp(e.index);
-                    setShowEpisodes(false);
-                  }}
-                  className={`flex w-full items-baseline gap-3 px-5 py-3 text-left text-sm transition hover:bg-surface-2 ${
-                    e.index === ep ? "text-accent" : ""
-                  }`}
-                >
-                  <span className="w-6 shrink-0 text-muted tabular-nums">{e.number ?? e.index + 1}</span>
-                  <span className="flex-1">{e.title}</span>
-                  <span className="shrink-0 text-xs text-muted">{formatDuration(e.duration)}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </aside>
-      )}
+      {episodesPanel}
     </div>
   );
 }
