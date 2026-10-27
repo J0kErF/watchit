@@ -35,6 +35,17 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+/* Geist has no Arabic; Alexandria does. Neither has Hebrew, so Rubik sets it, headings included. */
+html[lang="ar"] body {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+html[lang="he"] {
+  --font-display: var(--font-hebrew);
+}
+html[lang="he"] body {
+  font-family: var(--font-hebrew), system-ui, sans-serif;
+}
+
 ::selection {
   background: var(--accent);
   color: var(--accent-ink);

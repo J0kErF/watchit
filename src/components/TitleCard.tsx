@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { type Lang, t } from "@/lib/i18n";
 import type { TitleSummary } from "@/lib/types";
 
 export function Rating({ value, className = "" }: { value?: number; className?: string }) {
@@ -13,8 +14,34 @@ export function Rating({ value, className = "" }: { value?: number; className?: 
   );
 }
 
+export function NewEpisodeBadge({ lang, className = "absolute bottom-2 start-2" }: { lang: Lang; className?: string }) {
+  return (
+    <span className={`${className} rounded-sm bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow`}>
+      {t(lang, "New episode")}
+    </span>
+  );
+}
+
+function SeriesBadge({ lang }: { lang: Lang }) {
+  return (
+    <span className="absolute start-2 top-2 rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-ink">
+      {t(lang, "Series")}
+    </span>
+  );
+}
+
 /** Portrait poster card, for grids. */
-export function TitleCard({ title, className = "" }: { title: TitleSummary; className?: string }) {
+export function TitleCard({
+  title,
+  newEpisode = false,
+  lang,
+  className = "",
+}: {
+  title: TitleSummary;
+  newEpisode?: boolean;
+  lang: Lang;
+  className?: string;
+}) {
   return (
     <Link href={`/title/${title.id}`} className={`group block ${className}`}>
       <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-surface-2 ring-1 ring-white/5 transition duration-300 group-hover:ring-white/40">
@@ -25,11 +52,8 @@ export function TitleCard({ title, className = "" }: { title: TitleSummary; clas
           loading="lazy"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
-        {title.kind === "series" && (
-          <span className="absolute left-2 top-2 rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-ink">
-            Series
-          </span>
-        )}
+        {title.kind === "series" && <SeriesBadge lang={lang} />}
+        {newEpisode && <NewEpisodeBadge lang={lang} />}
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-medium">{title.title}</p>
       <p className="flex items-center gap-2 text-xs text-muted">
@@ -41,7 +65,7 @@ export function TitleCard({ title, className = "" }: { title: TitleSummary; clas
 }
 
 /** Landscape card with the title over the artwork, for rows. */
-export function WideCard({ title, className = "" }: { title: TitleSummary; className?: string }) {
+export function WideCard({ title, lang, className = "" }: { title: TitleSummary; lang: Lang; className?: string }) {
   return (
     <Link
       href={`/title/${title.id}`}
@@ -55,11 +79,7 @@ export function WideCard({ title, className = "" }: { title: TitleSummary; class
         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-      {title.kind === "series" && (
-        <span className="absolute left-2 top-2 rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-ink">
-          Series
-        </span>
-      )}
+      {title.kind === "series" && <SeriesBadge lang={lang} />}
       <div className="absolute inset-x-0 bottom-0 p-3">
         <p className="line-clamp-1 text-sm font-semibold drop-shadow sm:text-base">{title.title}</p>
         <p className="mt-0.5 flex items-center gap-2 text-xs text-white/75">
@@ -82,13 +102,13 @@ export function RankCard({ title, rank }: { title: TitleSummary; rank: number })
     >
       <span
         aria-hidden
-        className={`rank-numeral absolute bottom-[-0.12em] left-0 font-display leading-none ${
+        className={`rank-numeral absolute bottom-[-0.12em] start-0 font-display leading-none ${
           rank === 10 ? "text-[7.5rem] tracking-[-0.12em] sm:text-[9.5rem]" : "text-[9rem] sm:text-[11.5rem]"
         }`}
       >
         {rank}
       </span>
-      <div className="relative ml-auto aspect-[2/3] h-full overflow-hidden rounded-md bg-surface-2 ring-1 ring-white/5 transition duration-300 group-hover:ring-white/50">
+      <div className="relative ms-auto aspect-[2/3] h-full overflow-hidden rounded-md bg-surface-2 ring-1 ring-white/5 transition duration-300 group-hover:ring-white/50">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={title.poster} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
       </div>

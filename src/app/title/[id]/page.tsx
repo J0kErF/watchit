@@ -3,17 +3,24 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Episodes } from "@/components/Episodes";
 import { Hero, HeroSkeleton } from "@/components/Hero";
+import { KidsBlocked } from "@/components/KidsBlocked";
 import { Row } from "@/components/Row";
+import { t } from "@/lib/i18n";
+import { allowedForKids } from "@/lib/kids";
+import { getKids, getLang } from "@/lib/lang";
 import { getTitle } from "@/lib/titles";
 import { getTmdbRecommendations, tmdbPageUrl } from "@/lib/tmdb";
 
 export async function generateMetadata({ params }: PageProps<"/title/[id]">): Promise<Metadata> {
-  const title = await getTitle((await params).id);
+  const title = await getTitle((await params).id, await getLang());
   if (!title) return {};
   return {
     title: title.title,
     description: title.description.slice(0, 160),
-    openGraph: { title: title.title, description: title.description.slice(0, 160), images: [title.backdrop] },
+    alternates: { canonical: `/title/${title.id}` },
+    // Messaging apps show the first image: the wide artwork, then the poster.
+    openGraph: { title: title.title, description: title.description.slice(0, 160), images: [title.backdrop, title.poster] },
+    twitter: { card: "summary_large_image", images: [title.backdrop] },
   };
 }
 
@@ -26,19 +33,21 @@ export default function TitlePage({ params }: PageProps<"/title/[id]">) {
 }
 
 async function TitleView({ params }: { params: PageProps<"/title/[id]">["params"] }) {
-  const { id } = await params;
-  const [title, similar] = await Promise.all([getTitle(id), getTmdbRecommendations(id)]);
+  const [{ id }, lang, kids] = await Promise.all([params, getLang(), getKids()]);
+  const [title, recommended] = await Promise.all([getTitle(id, lang), getTmdbRecommendations(id, lang)]);
   if (!title) notFound();
+  if (kids && !allowedForKids(title)) return <KidsBlocked lang={lang} />;
+  const similar = kids ? recommended.filter((s) => s.family) : recommended;
 
   const facts: [string, string | undefined][] = [
-    [title.kind === "series" ? "Created by" : "Director", title.creator],
-    ["Starring", title.cast.slice(0, 4).map((c) => c.name).join(", ") || undefined],
-    ["Genres", title.genres.join(", ") || undefined],
+    [t(lang, title.kind === "series" ? "Created by" : "Director"), title.creator],
+    [t(lang, "Starring"), title.cast.slice(0, 4).map((c) => c.name).join(", ") || undefined],
+    [t(lang, "Genres"), title.genres.join(", ") || undefined],
   ];
 
   return (
     <>
-      <Hero title={title} detailed />
+      <Hero title={title} detailed lang={lang} />
 
       <div
         className={`relative z-10 -mt-8 grid gap-10 px-4 sm:-mt-14 sm:px-12 lg:gap-16 ${
@@ -61,7 +70,7 @@ async function TitleView({ params }: { params: PageProps<"/title/[id]">["params"
               ),
           )}
           <div>
-            <dt className="inline text-muted">More details: </dt>
+            <dt className="inline text-muted">{t(lang, "More details")}: </dt>
             <dd className="inline">
               <a href={tmdbPageUrl(title.id)} className="underline-offset-4 hover:underline">
                 The Movie Database (TMDB)
@@ -74,7 +83,7 @@ async function TitleView({ params }: { params: PageProps<"/title/[id]">["params"
       {title.cast.length > 0 && (
         <section className="mt-12 px-4 sm:px-12" aria-labelledby="cast-heading">
           <h2 id="cast-heading" className="mb-4 text-xl font-semibold sm:text-2xl">
-            Cast
+            {t(lang, "Cast")}
           </h2>
           <ul className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             {title.cast.map((c) => (
@@ -96,7 +105,7 @@ async function TitleView({ params }: { params: PageProps<"/title/[id]">["params"
       )}
 
       <div className="mt-10 pb-6">
-        <Row heading="More like this" titles={similar.filter((t) => t.id !== title.id)} />
+        <Row heading={t(lang, "More like this")} titles={similar.filter((s) => s.id !== title.id)} lang={lang} />
       </div>
     </>
   );

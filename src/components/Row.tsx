@@ -1,8 +1,19 @@
+import type { Lang } from "@/lib/i18n";
 import type { TitleSummary } from "@/lib/types";
 import { RowScroller } from "./RowScroller";
 import { RankCard, TitleCard, WideCard } from "./TitleCard";
 
-export function Row({ heading, titles, top10 = false }: { heading: string; titles: TitleSummary[]; top10?: boolean }) {
+export function Row({
+  heading,
+  titles,
+  top10 = false,
+  lang,
+}: {
+  heading: string;
+  titles: TitleSummary[];
+  top10?: boolean;
+  lang: Lang;
+}) {
   if (titles.length === 0) return null;
   return (
     <section className="py-2 sm:py-3" aria-label={heading}>
@@ -10,7 +21,7 @@ export function Row({ heading, titles, top10 = false }: { heading: string; title
       <RowScroller label={heading}>
         {top10
           ? titles.slice(0, 10).map((t, i) => <RankCard key={t.id} title={t} rank={i + 1} />)
-          : titles.map((t) => <WideCard key={t.id} title={t} className="w-64 sm:w-72 lg:w-80" />)}
+          : titles.map((t) => <WideCard key={t.id} title={t} lang={lang} className="w-64 sm:w-72 lg:w-80" />)}
       </RowScroller>
     </section>
   );
@@ -29,11 +40,12 @@ export function RowSkeleton() {
   );
 }
 
-export function Grid({ titles }: { titles: TitleSummary[] }) {
+/** Poster grid. `newEpisodes` holds the ids of series to badge with "New episode". */
+export function Grid({ titles, newEpisodes, lang }: { titles: TitleSummary[]; newEpisodes?: Set<string>; lang: Lang }) {
   return (
     <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 sm:gap-x-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
       {titles.map((t) => (
-        <TitleCard key={t.id} title={t} />
+        <TitleCard key={t.id} title={t} newEpisode={newEpisodes?.has(t.id)} lang={lang} />
       ))}
     </div>
   );

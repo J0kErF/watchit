@@ -3,21 +3,25 @@
 import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { preconnect } from "react-dom";
-import { getProgress, saveProgress } from "@/lib/library";
+import { episodeKey, getProgress, saveProgress, setWatched } from "@/lib/library";
 import { formatDuration } from "@/lib/format";
 import type { TitleDetail } from "@/lib/types";
+import { useLang, useT } from "./LangProvider";
 
 // The site accent (--accent), for the embedded player's controls.
 const EMBED_THEME = "ffb238";
 
 export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; initialEp: number; embedUrl: string }) {
   preconnect(embedUrl);
+  const lang = useLang();
+  const t = useT();
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [ep, setEp] = useState(() => Math.min(Math.max(initialEp, 0), title.episodes.length - 1));
   const [showEpisodes, setShowEpisodes] = useState(false);
   const episode = title.episodes[ep];
   const next = title.episodes[ep + 1];
-  const seasonLabel = episode.season && episode.number ? `S${episode.season} E${episode.number}` : undefined;
+  const seasonLabel =
+    episode.season && episode.number ? t("S{season} E{episode}", { season: episode.season, episode: episode.number }) : undefined;
   const src = embedUrl + episode.path;
   const lastSave = useRef(0);
 
@@ -53,6 +57,8 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
 
   const persist = (time: number, duration: number) => {
     if (!duration || !Number.isFinite(duration)) return;
+    // Nine tenths in counts as watched; the credits rarely play to the end.
+    if (title.kind === "series" && time / duration >= 0.9) setWatched(title.id, [episodeKey(episode)], true);
     saveProgress({
       id: title.id,
       kind: title.kind,
@@ -107,9 +113,9 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
         <Link
           href={`/title/${title.id}`}
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 transition hover:bg-white/20"
-          aria-label="Back to details"
+          aria-label={t("Back to details")}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="rtl:-scale-x-100">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
@@ -117,7 +123,7 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
           <p className="truncate text-lg font-semibold sm:text-xl">{title.title}</p>
           {title.kind === "series" && (
             <p className="truncate text-xs text-muted sm:text-sm">
-              {seasonLabel ?? `Episode ${ep + 1}`} · {episode.title}
+              {seasonLabel ?? t("Episode {n}", { n: ep + 1 })} · {episode.title}
             </p>
           )}
         </div>
@@ -127,7 +133,7 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
             onClick={() => setShowEpisodes((s) => !s)}
             className="shrink-0 rounded-full bg-white/10 px-4 py-2 text-sm transition hover:bg-white/20"
           >
-            Episodes
+            {t("Episodes")}
           </button>
         )}
       </div>
@@ -146,17 +152,17 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
         <button
           type="button"
           onClick={() => setEp(ep + 1)}
-          className="absolute bottom-20 right-4 z-10 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink shadow-lg transition hover:brightness-110 sm:right-8"
+          className="absolute bottom-20 end-4 z-10 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink shadow-lg transition hover:brightness-110 sm:end-8"
         >
-          Next episode →
+          {t("Next episode →")}
         </button>
       )}
 
       {showEpisodes && (
-        <aside className="absolute inset-y-0 right-0 z-20 flex w-full max-w-sm flex-col border-l border-line bg-surface/95 backdrop-blur">
+        <aside className="absolute inset-y-0 end-0 z-20 flex w-full max-w-sm flex-col border-s border-line bg-surface/95 backdrop-blur">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <h2 className="text-xl font-semibold">Episodes</h2>
-            <button type="button" onClick={() => setShowEpisodes(false)} className="text-2xl text-muted hover:text-foreground" aria-label="Close episodes">
+            <h2 className="text-xl font-semibold">{t("Episodes")}</h2>
+            <button type="button" onClick={() => setShowEpisodes(false)} className="text-2xl text-muted hover:text-foreground" aria-label={t("Close episodes")}>
               ×
             </button>
           </div>
@@ -164,7 +170,7 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
             {title.episodes.map((e, i) => (
               <li key={e.path}>
                 {e.season && e.season !== title.episodes[i - 1]?.season && (
-                  <p className="px-5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted">Season {e.season}</p>
+                  <p className="px-5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted">{t("Season {n}", { n: e.season })}</p>
                 )}
                 <button
                   type="button"
@@ -172,13 +178,13 @@ export function Player({ title, initialEp, embedUrl }: { title: TitleDetail; ini
                     setEp(e.index);
                     setShowEpisodes(false);
                   }}
-                  className={`flex w-full items-baseline gap-3 px-5 py-3 text-left text-sm transition hover:bg-surface-2 ${
+                  className={`flex w-full items-baseline gap-3 px-5 py-3 text-start text-sm transition hover:bg-surface-2 ${
                     e.index === ep ? "text-accent" : ""
                   }`}
                 >
                   <span className="w-6 shrink-0 text-muted tabular-nums">{e.number ?? e.index + 1}</span>
                   <span className="flex-1">{e.title}</span>
-                  <span className="shrink-0 text-xs text-muted">{formatDuration(e.duration)}</span>
+                  <span className="shrink-0 text-xs text-muted">{formatDuration(e.duration, lang)}</span>
                 </button>
               </li>
             ))}
