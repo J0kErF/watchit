@@ -1,19 +1,24 @@
 "use client";
 
 import { useActionState } from "react";
+import { useT } from "@/components/LangProvider";
 import { saveLibrary } from "./actions";
 
 export function LibraryForm({ current, defaultHost }: { current: string; defaultHost: string }) {
+  const t = useT();
   const [state, action, pending] = useActionState(saveLibrary, null);
 
   return (
     <form action={action} className="max-w-xl">
       <p className="mb-6 text-muted">
-        Now playing from <span className="text-foreground">{current}</span>
-        {current === defaultHost && " (default)"}.
+        {t("Now playing from {host}", { host: "" })}
+        <span className="text-foreground" dir="ltr">
+          {current}
+        </span>
+        {current === defaultHost && ` ${t("(default)")}`}.
       </p>
       <label htmlFor="domain" className="mb-2 block text-sm font-medium">
-        Your library’s embed domain
+        {t("Your library’s embed domain")}
       </label>
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
@@ -31,7 +36,7 @@ export function LibraryForm({ current, defaultHost }: { current: string; default
           disabled={pending}
           className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-ink transition hover:brightness-110 disabled:opacity-60"
         >
-          {pending ? "Saving…" : "Save"}
+          {t(pending ? "Saving…" : "Save")}
         </button>
       </div>
       {current !== defaultHost && (
@@ -44,7 +49,7 @@ export function LibraryForm({ current, defaultHost }: { current: string; default
           disabled={pending}
           className="mt-3 text-sm text-muted underline-offset-4 hover:text-foreground hover:underline"
         >
-          Use the default library
+          {t("Use the default library")}
         </button>
       )}
       {state && (
@@ -53,8 +58,9 @@ export function LibraryForm({ current, defaultHost }: { current: string; default
         </p>
       )}
       <p className="mt-8 text-sm text-muted">
-        Every title plays from this domain. Your embed provider needs this site on its safelist.
-        The choice is saved in this browser.
+        {t(
+          "Every title plays from this domain. Your embed provider needs this site on its safelist. The choice is saved in this browser.",
+        )}
       </p>
     </form>
   );

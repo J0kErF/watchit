@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { EMBED_URL } from "@/lib/embed";
 import { formatDuration } from "@/lib/format";
+import { type Lang, t } from "@/lib/i18n";
 import type { TitleDetail } from "@/lib/types";
 import { Mark } from "./Logo";
 import { Rating } from "./TitleCard";
+import { TrailerButton } from "./TrailerButton";
 import { WatchlistButton } from "./WatchlistButton";
 
 export function PlayIcon() {
@@ -23,19 +25,31 @@ function InfoIcon() {
   );
 }
 
-export function titleLength(title: TitleDetail) {
+export function titleLength(title: TitleDetail, lang: Lang) {
   if (title.kind === "series") {
-    return title.seasons && title.seasons > 1 ? `${title.seasons} seasons` : `${title.episodes.length} episodes`;
+    return title.seasons && title.seasons > 1
+      ? t(lang, "{n} seasons", { n: title.seasons })
+      : t(lang, "{n} episodes", { n: title.episodes.length });
   }
-  return formatDuration(title.episodes[0]?.duration);
+  return formatDuration(title.episodes[0]?.duration, lang);
 }
 
 /**
  * Full-bleed billboard: the backdrop with the title's logo (or name), facts and actions.
  * `detailed` is the title page version, with the tagline and no "More info".
  */
-export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail; eyebrow?: string; detailed?: boolean }) {
-  const facts = [title.year, titleLength(title), title.genres.slice(0, 3).join(" · ")].filter(Boolean);
+export function Hero({
+  title,
+  eyebrow,
+  detailed = false,
+  lang,
+}: {
+  title: TitleDetail;
+  eyebrow?: string;
+  detailed?: boolean;
+  lang: Lang;
+}) {
+  const facts = [title.year, titleLength(title, lang), title.genres.slice(0, 3).join(" · ")].filter(Boolean);
 
   return (
     <section className="relative flex min-h-[80svh] items-end overflow-hidden pb-14 pt-28 sm:min-h-[92svh] sm:pb-24">
@@ -48,7 +62,7 @@ export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail;
         fetchPriority="high"
         className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/50 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/50 to-transparent rtl:bg-gradient-to-l" />
       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/60 to-transparent" />
       <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent" />
 
@@ -65,7 +79,7 @@ export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail;
             <img
               src={title.logo}
               alt=""
-              className="max-h-28 w-auto max-w-[80%] object-contain object-left drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] sm:max-h-40 sm:max-w-md"
+              className="max-h-28 w-auto max-w-[80%] object-contain object-left drop-shadow rtl:object-right-[0_4px_24px_rgba(0,0,0,0.6)] sm:max-h-40 sm:max-w-md"
             />
             <h1 className="sr-only">{title.title}</h1>
           </>
@@ -75,6 +89,11 @@ export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail;
 
         <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-foreground/85 sm:text-base">
           <Rating value={title.rating} />
+          {title.certification && (
+            <span className="rounded-sm border border-foreground/50 px-1.5 text-xs font-semibold leading-5 sm:text-sm">
+              {title.certification}
+            </span>
+          )}
           {facts.map((f, i) => (
             <span key={i} className="flex items-center gap-3">
               {(i > 0 || title.rating) && <span className="h-1 w-1 rounded-full bg-foreground/50" />}
@@ -99,15 +118,16 @@ export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail;
             className="inline-flex items-center gap-2.5 rounded-md bg-white px-6 py-2.5 text-base font-bold text-black transition hover:bg-white/80 sm:px-8 sm:py-3 sm:text-lg"
           >
             <PlayIcon />
-            {title.kind === "series" ? "Play S1 E1" : "Play"}
+            {t(lang, title.kind === "series" ? "Play S1 E1" : "Play")}
           </Link>
+          {detailed && title.trailer && <TrailerButton videoId={title.trailer} title={title.title} />}
           {!detailed && (
             <Link
               href={`/title/${title.id}`}
               className="inline-flex items-center gap-2.5 rounded-md bg-white/25 px-6 py-2.5 text-base font-bold backdrop-blur transition hover:bg-white/15 sm:px-8 sm:py-3 sm:text-lg"
             >
               <InfoIcon />
-              More info
+              {t(lang, "More info")}
             </Link>
           )}
           <WatchlistButton
@@ -122,7 +142,7 @@ export function Hero({ title, eyebrow, detailed = false }: { title: TitleDetail;
 export function HeroSkeleton() {
   return (
     <div className="relative min-h-[80svh] bg-surface sm:min-h-[92svh]">
-      <div className="absolute bottom-24 left-4 space-y-4 sm:left-12">
+      <div className="absolute bottom-24 start-4 space-y-4 sm:start-12">
         <div className="h-16 w-80 max-w-[80vw] animate-pulse rounded bg-surface-2" />
         <div className="h-4 w-64 animate-pulse rounded bg-surface-2" />
         <div className="h-4 w-96 max-w-[80vw] animate-pulse rounded bg-surface-2" />
