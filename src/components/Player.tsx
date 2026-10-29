@@ -6,11 +6,14 @@ import { preconnect } from "react-dom";
 import { getProgress, saveProgress } from "@/lib/library";
 import { formatDuration } from "@/lib/format";
 import type { Source, TitleDetail } from "@/lib/types";
+import { useEmbedPlayer, type EmbedEvent } from "./player/embedControl";
 import { VideoPlayer, type PlayerServer } from "./player/VideoPlayer";
 
 // The site accent (--accent), for the embedded player's controls.
 const EMBED_THEME = "ffb238";
 const EMBED_KEY = "embed";
+/** Seconds the arrow keys skip in the embedded player, as in the built-in one. */
+const SKIP = 15;
 
 const sourceKey = (s: Source, i: number) => `source:${i}:${s.label}`;
 
@@ -131,30 +134,50 @@ export function Player({
     }
   };
 
-  const onPlayerMessage = useEffectEvent((e: MessageEvent) => {
+  // The embedded player's playback events keep Continue Watching and resume working.
+  const onEmbedEvent = (update: EmbedEvent) => {
     if (source) return;
-    const host = new URL(embedUrl).hostname.replace(/^www\./, "");
-    let origin: string;
-    try {
-      origin = new URL(e.origin).hostname;
-    } catch {
-      return;
+    const { event, currentTime: time, duration } = update;
+    if (time !== undefined) lastTime.current = time;
+    if (time !== undefined && duration) {
+      if (event === "pause" || event === "ended") persist(time, duration);
+      else persistThrottled(time, duration);
     }
-    if (origin !== host && !origin.endsWith(`.${host}`)) return;
-    const update = readPlayerMessage(e.data);
-    if (!update) return;
-    if (update.time !== undefined) lastTime.current = update.time;
-    if (update.time !== undefined && update.duration) {
-      if (update.event === "pause" || update.event === "ended") persist(update.time, update.duration);
-      else persistThrottled(update.time, update.duration);
-    }
-    if ((update.event === "ended" || update.event === "complete") && next) setEp(ep + 1);
+    if ((event === "ended" || event === "complete") && next) setEp(ep + 1);
+  };
+  const embed = useEmbedPlayer(frameRef, embedUrl, onEmbedEvent);
+
+  // Keyboard shortcuts for the embedded player, as in the built-in one. They work while this page
+  // has focus; once the viewer clicks into the player, its own shortcuts take over.
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (source || !ready) return;
+    const target = e.target as HTMLElement;
+    if (e.ctrlKey || e.metaKey || e.altKey || target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+    if (target.tagName === "BUTTON" && (e.key === " " || e.key === "Enter")) return;
+    const s = embed.status();
+    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    let handled = true;
+    if (key === " " || key === "k") {
+      if (s.playing) embed.pause();
+      else embed.play();
+    } else if (key === "ArrowLeft" || key === "j") embed.seek(s.currentTime - SKIP);
+    else if (key === "ArrowRight" || key === "l") embed.seek(s.currentTime + SKIP);
+    else if (key === "ArrowUp" || key === "ArrowDown") {
+      if (s.muted) embed.setMuted(false);
+      embed.setVolume((s.muted ? 0 : s.volume) + (key === "ArrowUp" ? 0.1 : -0.1));
+    } else if (key === "m") embed.setMuted(!s.muted);
+    else if (key === "n" && next) setEp(ep + 1);
+    else if (key === "Home") embed.seek(0);
+    else if (key === "End" && s.duration) embed.seek(s.duration);
+    else if (/^[0-9]$/.test(key) && s.duration) embed.seek((Number(key) / 10) * s.duration);
+    else handled = false;
+    if (handled) e.preventDefault();
   });
 
   useEffect(() => {
-    const listener = (e: MessageEvent) => onPlayerMessage(e);
-    window.addEventListener("message", listener);
-    return () => window.removeEventListener("message", listener);
+    const listener = (e: KeyboardEvent) => onKey(e);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
   }, []);
 
   const heading = title.title;
@@ -280,10 +303,16 @@ export function Player({
         key={src}
         ref={frameRef}
         title={subheading ? `${heading} · ${episode.title}` : heading}
-        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        // Allow scripts, forms, and media, but EXCLUDE 'allow-popups' and 'allow-top-navigation'
+        sandbox="allow-scripts allow-same-origin allow-presentation allow-encrypted-media"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
         scrolling="no"
         className="w-full flex-1 border-0"
+        onLoad={() => {
+          embed.reset();
+          embed.requestStatus();
+        }}
       />
 
       {next && (
@@ -299,29 +328,4 @@ export function Player({
       {episodesPanel}
     </div>
   );
-}
-
-/**
- * A playback update posted by the embedded player. Players differ in message shape, so this
- * accepts JSON strings, fields at the top level or under `data`, and the common field names.
- */
-function readPlayerMessage(raw: unknown) {
-  let msg = raw;
-  if (typeof msg === "string") {
-    try {
-      msg = JSON.parse(msg);
-    } catch {
-      return null;
-    }
-  }
-  if (!msg || typeof msg !== "object") return null;
-  const outer = msg as Record<string, unknown>;
-  const fields = (outer.data && typeof outer.data === "object" ? outer.data : outer) as Record<string, unknown>;
-  const num = (...keys: string[]) =>
-    keys.map((k) => fields[k]).find((v): v is number => typeof v === "number" && Number.isFinite(v));
-  return {
-    time: num("currentTime", "time", "timestamp", "position"),
-    duration: num("duration"),
-    event: String(fields.event ?? outer.event ?? "").toLowerCase(),
-  };
 }
