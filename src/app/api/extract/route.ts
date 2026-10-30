@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const m3u8Match = html.match(/https?:\/\/[^"'\s]+\.m3u8[^"'\s]*/);
     
     if (!m3u8Match) {
-      // Fallback: If direct .m3u8 isn't exposed, pass the clean embed URL back for secure sandboxed iframe rendering
+      // Fallback: If direct .m3u8 isn't exposed, pass the clean embed URL back for iframe rendering
       return NextResponse.json({ 
         success: true, 
         embedFallback: targetUrl 

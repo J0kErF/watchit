@@ -117,7 +117,7 @@ export default function VideoPlayer({
     );
   }
 
-  // If the extractor fell back to a secure embed URL, render it in a properly sandboxed iframe
+  // If the extractor fell back to an embed URL, render it in an iframe
   if (embedFallback) {
     return (
       <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl">
@@ -126,9 +126,6 @@ export default function VideoPlayer({
           className="w-full h-full border-0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
-          // Explicit sandbox permissions satisfy internal DOM checks (clearing the sandbox error) 
-          // while blocking popup windows and top-level navigation redirects.
-          sandbox="allow-scripts allow-same-origin allow-autoplay allow-presentation"
         />
       </div>
     );

@@ -309,8 +309,6 @@ export function Player({
         key={src}
         ref={frameRef}
         title={subheading ? `${heading} · ${episode.title}` : heading}
-        // Allow scripts, forms, and media, but EXCLUDE 'allow-popups' and 'allow-top-navigation'
-        sandbox="allow-scripts allow-same-origin allow-presentation allow-encrypted-media"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
         scrolling="no"
